@@ -61,10 +61,12 @@ jobs:
       - name: Build Windows exe + installer
         if: matrix.os == 'windows-latest'
         run: |
-          pyinstaller --onefile --windowed --name thkiosk-helper src/main.py
+          pyinstaller main.spec
+
           mkdir dist/windows
           copy dist\\thkiosk-helper.exe build\\windows\\dist\\thkiosk-helper.exe
-          "C:\\Program Files (x86)\\Inno Setup 6\\ISCC.exe" build\\windows\\InnoSetup\\setup.iss
+
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "build/windows/InnoSetup/setup.iss"
 
       # -------------------------
       # Upload artifacts

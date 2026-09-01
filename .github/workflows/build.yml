@@ -63,13 +63,10 @@ jobs:
         run: |
           pyinstaller --onefile --windowed --name thkiosk-helper src/main.py
 
-          # Ensure dist/windows exists
-          if (!(Test-Path "dist/windows")) { mkdir "dist/windows" }
-
-          # Ensure installer staging folder exists
           if (!(Test-Path "build/windows/dist")) { mkdir "build/windows/dist" }
 
-          copy dist\\windows\\thkiosk-helper.exe build\\windows\\dist\\thkiosk-helper.exe
+          $exe = Get-ChildItem -Recurse dist -Filter "thkiosk-helper.exe" | Select-Object -First 1
+          Copy-Item $exe.FullName build/windows/dist/thkiosk-helper.exe
 
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "build/windows/InnoSetup/setup.iss"
 

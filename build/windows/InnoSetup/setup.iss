@@ -4,10 +4,10 @@ AppVersion=1.0.0
 DefaultDirName={pf}\ThKiosk Helper
 OutputDir=.
 OutputBaseFilename=ThKioskHelperInstaller
-SetupIconFile=icons\app.ico
+; SetupIconFile=icons\app.ico
 
 [Files]
-Source="dist\thkiosk-helper.exe"; DestDir="{app}"
+Source="..\dist\thkiosk-helper.exe"; DestDir="{app}"
 
 [Registry]
 Root: HKCR; Subkey: "thkiosk"; ValueType: string; ValueName: ""; ValueData: "URL:ThKiosk Protocol"

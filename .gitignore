@@ -43,11 +43,19 @@ dist/
 
 !build/macos/
 !build/macos/ThKiosk.app/
-!build/macos/ThKiosk.app/.keep
-!build/macos/ThKiosk.app/MacOS/
-!build/macos/ThKiosk.app/MacOS/.keep
+!build/macos/ThKiosk.app/Contents/
+!build/macos/ThKiosk.app/Contents/MacOS/
+!build/macos/ThKiosk.app/Contents/MacOS/.keep
+!build/macos/ThKiosk.app/Contents/Resources/
+!build/macos/ThKiosk.app/Contents/Resources/icon.icns
+!build/macos/ThKiosk.app/Contents/Resources/.keep
 
+!build/
 !build/windows/
+!build/windows/InnoSetup/
+!build/windows/InnoSetup/setup.iss
+!build/windows/InnoSetup/icons/
+!build/windows/InnoSetup/icons/app.ico
 !build/windows/dist/
 !build/windows/dist/.keep
 

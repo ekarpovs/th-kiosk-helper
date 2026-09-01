@@ -1,0 +1,12 @@
+#!/bin/sh
+set -e
+
+# Remove desktop entry
+if [ -f /usr/share/applications/thkiosk-helper.desktop ]; then
+    rm /usr/share/applications/thkiosk-helper.desktop
+fi
+
+# Remove custom protocol handler
+update-desktop-database /usr/share/applications || true
+
+exit 0

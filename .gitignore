@@ -19,25 +19,27 @@ venv/
 # -----------------------------
 # PyInstaller
 # -----------------------------
-# Spec file (optional: commit if you want reproducible builds)
-main.spec
-
-# PyInstaller build folders
+# Ignore build output
 build/
 dist/
 
-# -----------------------------
-# Installer staging folders
-# -----------------------------
-# Linux DEB staging
-build/linux/debian/usr/local/bin/thkiosk-helper
-build/linux/debian/usr/share/applications/thkiosk-helper.desktop
+# Allow installer staging folders
+!build/linux/
+!build/linux/debian/
+!build/linux/debian/DEBIAN/
+!build/linux/debian/usr/
+!build/linux/debian/usr/local/
+!build/linux/debian/usr/local/bin/
+!build/linux/debian/usr/share/
+!build/linux/debian/usr/share/applications/
 
-# macOS APP staging
-build/macos/ThKiosk.app/
+# Allow macOS staging
+!build/macos/
+!build/macos/ThKiosk.app/
 
-# Windows EXE staging
-build/windows/dist/thkiosk-helper.exe
+# Allow Windows staging
+!build/windows/
+!build/windows/dist/
 
 # -----------------------------
 # OS-specific junk files

@@ -20,6 +20,7 @@ venv/
 # PyInstaller
 # -----------------------------
 # Ignore build output
+# Ignore build output
 build/
 dist/
 
@@ -27,19 +28,24 @@ dist/
 !build/linux/
 !build/linux/debian/
 !build/linux/debian/DEBIAN/
+!build/linux/debian/DEBIAN/.keep
 !build/linux/debian/usr/
 !build/linux/debian/usr/local/
 !build/linux/debian/usr/local/bin/
+!build/linux/debian/usr/local/bin/.keep
 !build/linux/debian/usr/share/
 !build/linux/debian/usr/share/applications/
+!build/linux/debian/usr/share/applications/.keep
 
 # Allow macOS staging
 !build/macos/
 !build/macos/ThKiosk.app/
+!build/macos/ThKiosk.app/.keep
 
 # Allow Windows staging
 !build/windows/
 !build/windows/dist/
+!build/windows/dist/.keep
 
 # -----------------------------
 # OS-specific junk files

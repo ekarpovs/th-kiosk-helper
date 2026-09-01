@@ -63,8 +63,11 @@ jobs:
         run: |
           pyinstaller --onefile --windowed --name thkiosk-helper src/main.py
 
-          mkdir dist/windows
-          mkdir build/windows/dist
+          # Ensure dist/windows exists
+          if (!(Test-Path "dist/windows")) { mkdir "dist/windows" }
+
+          # Ensure installer staging folder exists
+          if (!(Test-Path "build/windows/dist")) { mkdir "build/windows/dist" }
 
           copy dist\\windows\\thkiosk-helper.exe build\\windows\\dist\\thkiosk-helper.exe
 

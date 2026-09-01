@@ -44,6 +44,8 @@ dist/
 !build/macos/
 !build/macos/ThKiosk.app/
 !build/macos/ThKiosk.app/.keep
+!build/macos/ThKiosk.app/MacOS/
+!build/macos/ThKiosk.app/MacOS/.keep
 
 !build/windows/
 !build/windows/dist/

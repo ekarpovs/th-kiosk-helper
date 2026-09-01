@@ -1,0 +1,8 @@
+Package: thkiosk-helper
+Version: 1.0.0
+Section: utils
+Priority: optional
+Architecture: amd64
+Maintainer: Evgeny <admin@example.com>
+Description: Local kiosk browser launcher for cloud-controlled theater screens.
+ This helper app exposes a FastAPI server and launches browsers in kiosk mode.

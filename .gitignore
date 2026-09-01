@@ -20,11 +20,15 @@ venv/
 # PyInstaller
 # -----------------------------
 # Ignore build output
-# Ignore build output
+build/
 build/
 dist/
 
-# Allow installer staging folders
+# UN-IGNORE ROOT FOLDERS FIRST
+!build/
+!dist/
+
+# Now un-ignore installer staging folders
 !build/linux/
 !build/linux/debian/
 !build/linux/debian/DEBIAN/
@@ -37,12 +41,10 @@ dist/
 !build/linux/debian/usr/share/applications/
 !build/linux/debian/usr/share/applications/.keep
 
-# Allow macOS staging
 !build/macos/
 !build/macos/ThKiosk.app/
 !build/macos/ThKiosk.app/.keep
 
-# Allow Windows staging
 !build/windows/
 !build/windows/dist/
 !build/windows/dist/.keep

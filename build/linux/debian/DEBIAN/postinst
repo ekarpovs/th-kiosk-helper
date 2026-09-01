@@ -1,0 +1,5 @@
+#!/bin/bash
+xdg-mime default thkiosk-helper.desktop x-scheme-handler/thkiosk
+update-desktop-database /usr/share/applications || true
+chmod +x /usr/local/bin/thkiosk-helper
+echo "thkiosk Helper installed."

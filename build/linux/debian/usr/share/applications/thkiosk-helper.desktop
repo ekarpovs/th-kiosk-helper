@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=ThKiosk Helper
+Exec=/usr/local/bin/thkiosk-helper %u
+Type=Application
+Terminal=false
+MimeType=x-scheme-handler/thkiosk;
+NoDisplay=true

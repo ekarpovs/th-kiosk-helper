@@ -50,10 +50,10 @@ jobs:
         run: |
           pyinstaller --onefile --windowed --name thkiosk-helper src/main.py
           mkdir -p dist/macos
-          cp dist/thkiosk-helper build/macos/MyKiosk.app/Contents/MacOS/thkiosk-helper
-          hdiutil create -volname MyKiosk \
-            -srcfolder build/macos/MyKiosk.app \
-            -ov -format UDZO dist/macos/MyKiosk.dmg
+          cp dist/thkiosk-helper build/macos/ThKiosk.app/Contents/MacOS/thkiosk-helper
+          hdiutil create -volname ThKiosk \
+            -srcfolder build/macos/ThKiosk.app \
+            -ov -format UDZO dist/macos/ThKiosk.dmg
 
       # -------------------------
       # WINDOWS BUILD

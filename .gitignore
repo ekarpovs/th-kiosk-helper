@@ -1,0 +1,82 @@
+# -----------------------------
+# Python
+# -----------------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+*.pkl
+*.log
+*.tmp
+
+# Virtual environments
+venv/
+.env/
+.venv/
+.thkhvenv/
+
+# -----------------------------
+# PyInstaller
+# -----------------------------
+# Spec file (optional: commit if you want reproducible builds)
+main.spec
+
+# PyInstaller build folders
+build/
+dist/
+
+# -----------------------------
+# Installer staging folders
+# -----------------------------
+# Linux DEB staging
+build/linux/debian/usr/local/bin/mykiosk-helper
+build/linux/debian/usr/share/applications/mykiosk-helper.desktop
+
+# macOS APP staging
+build/macos/MyKiosk.app/
+
+# Windows EXE staging
+build/windows/dist/mykiosk-helper.exe
+
+# -----------------------------
+# OS-specific junk files
+# -----------------------------
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# Linux
+*~
+.cache/
+.Trash-*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# -----------------------------
+# IDE / Editor files
+# -----------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# -----------------------------
+# Logs
+# -----------------------------
+mykiosk-helper.log
+*.log
+
+# -----------------------------
+# Packaging outputs
+# -----------------------------
+dist/linux/*.deb
+dist/macos/*.dmg
+dist/windows/*.exe

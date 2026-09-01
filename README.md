@@ -236,17 +236,6 @@ dist/windows/
 
 # 📄 License
 
-MIT License (or your preferred license).
+MIT License.
 
 ---
-
-Evgeny, if you want, I can now generate a **clean version of your full helper app code** with all features integrated:  
-**Generate full helper app code**
-
-Auto‑update system
-import shlex
-
-    # Disable AT-SPI (Assistive Technology Service Provider Interface) 
-    # for GTK applications to avoid accessibility warnings.
-    os.environ["NO_AT_BRIDGE"] = "1"
-            cmd = [browser_path, shlex.quote(safe_url)]

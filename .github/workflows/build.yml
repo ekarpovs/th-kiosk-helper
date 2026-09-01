@@ -1,0 +1,75 @@
+name: Build MyKiosk Helper
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install runtime dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install build dependencies
+        run: pip install -r build-requirements.txt
+
+      # -------------------------
+      # LINUX BUILD
+      # -------------------------
+      - name: Build Linux binary
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          pyinstaller --onefile --name thkiosk-helper src/main.py
+          mkdir -p dist/linux
+          cp dist/thkiosk-helper build/linux/debian/usr/local/bin/thkiosk-helper
+          chmod 755 build/linux/debian/DEBIAN/postinst
+          dpkg-deb --build build/linux/debian dist/linux/thkiosk-helper_1.0.0_amd64.deb
+
+      # -------------------------
+      # MACOS BUILD
+      # -------------------------
+      - name: Build macOS app + dmg
+        if: matrix.os == 'macos-latest'
+        run: |
+          pyinstaller --onefile --windowed --name thkiosk-helper src/main.py
+          mkdir -p dist/macos
+          cp dist/thkiosk-helper build/macos/MyKiosk.app/Contents/MacOS/thkiosk-helper
+          hdiutil create -volname MyKiosk \
+            -srcfolder build/macos/MyKiosk.app \
+            -ov -format UDZO dist/macos/MyKiosk.dmg
+
+      # -------------------------
+      # WINDOWS BUILD
+      # -------------------------
+      - name: Build Windows exe + installer
+        if: matrix.os == 'windows-latest'
+        run: |
+          pyinstaller --onefile --windowed --name thkiosk-helper src/main.py
+          mkdir dist/windows
+          copy dist\\thkiosk-helper.exe build\\windows\\dist\\thkiosk-helper.exe
+          "C:\\Program Files (x86)\\Inno Setup 6\\ISCC.exe" build\\windows\\InnoSetup\\setup.iss
+
+      # -------------------------
+      # Upload artifacts
+      # -------------------------
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}-artifacts
+          path: dist/

@@ -1,10 +1,10 @@
 
 ---
 
-# 📘 MyKiosk Helper App  
+# 📘 ThKiosk Helper App  
 A cross‑platform Python application that runs on **Windows**, **macOS**, and **Linux**, providing a secure way for a cloud service to open a **real browser window in kiosk or standard mode** on the client machine.
 
-The helper app exposes a **local FastAPI server** and supports a **custom protocol handler** (`mykiosk://`) so your cloud backend can trigger browser launches on the user's device.
+The helper app exposes a **local FastAPI server** and supports a **custom protocol handler** (`thkiosk://`) so your cloud backend can trigger browser launches on the user's device.
 
 ---
 
@@ -15,7 +15,7 @@ The helper app exposes a **local FastAPI server** and supports a **custom protoc
 - Standard mode supported  
 - Installed browser detection  
 - Local FastAPI API (`localhost:3333`)  
-- Custom protocol handler (`mykiosk://`)  
+- Custom protocol handler (`thkiosk://`)  
 - Cross‑platform installers  
 - Persistent logging  
 - Health and status endpoints  
@@ -25,7 +25,7 @@ The helper app exposes a **local FastAPI server** and supports a **custom protoc
 ## 📦 Project Structure
 
 ```
-mykiosk-helper/
+thkiosk-helper/
 │
 ├── src/
 │   └── main.py
@@ -112,20 +112,20 @@ pyinstaller --onefile src/main.py
 ### 2. Move binary into installer staging
 
 ```bash
-cp dist/main build/linux/debian/usr/local/bin/mykiosk-helper
-chmod +x build/linux/debian/usr/local/bin/mykiosk-helper
+cp dist/main build/linux/debian/usr/local/bin/thkiosk-helper
+chmod +x build/linux/debian/usr/local/bin/thkiosk-helper
 ```
 
 ### 3. Build `.deb` installer
 
 ```bash
-dpkg-deb --build build/linux/debian dist/linux/mykiosk-helper_1.0.0_amd64.deb
+dpkg-deb --build build/linux/debian dist/linux/thkiosk-helper_1.0.0_amd64.deb
 ```
 
 ### 4. Install
 
 ```bash
-sudo dpkg -i dist/linux/mykiosk-helper_1.0.0_amd64.deb
+sudo dpkg -i dist/linux/thkiosk-helper_1.0.0_amd64.deb
 ```
 
 ---
@@ -136,20 +136,20 @@ sudo dpkg -i dist/linux/mykiosk-helper_1.0.0_amd64.deb
 
 ```bash
 pyinstaller --onefile --windowed src/main.py
-cp dist/main build/macos/MyKiosk.app/Contents/MacOS/mykiosk-helper
+cp dist/main build/macos/ThKiosk.app/Contents/MacOS/thkiosk-helper
 ```
 
 ### 2. Build `.dmg`
 
 ```bash
-hdiutil create -volname MyKiosk \
-  -srcfolder build/macos/MyKiosk.app \
-  -ov -format UDZO dist/macos/MyKiosk.dmg
+hdiutil create -volname ThKiosk \
+  -srcfolder build/macos/ThKiosk.app \
+  -ov -format UDZO dist/macos/ThKiosk.dmg
 ```
 
 ### 3. Install
 
-Drag `MyKiosk.app` into `/Applications`.
+Drag `ThKiosk.app` into `/Applications`.
 
 ---
 
@@ -159,7 +159,7 @@ Drag `MyKiosk.app` into `/Applications`.
 
 ```bash
 pyinstaller --onefile --windowed src/main.py
-cp dist/main.exe build/windows/dist/mykiosk-helper.exe
+cp dist/main.exe build/windows/dist/thkiosk-helper.exe
 ```
 
 ### 2. Build installer
@@ -171,7 +171,7 @@ ISCC build/windows/InnoSetup/setup.iss
 Installer output:
 
 ```
-dist/windows/MyKioskHelperInstaller.exe
+dist/windows/ThKioskHelperInstaller.exe
 ```
 
 ---
@@ -202,12 +202,12 @@ Detailed system status including installed browsers, log file path, working dire
 
 ---
 
-# 🔗 Custom Protocol Handler (`mykiosk://`)
+# 🔗 Custom Protocol Handler (`thkiosk://`)
 
 Example:
 
 ```
-mykiosk://open?url=https://example.com&browser=firefox&kiosk=true
+thkiosk://open?url=https://example.com&browser=firefox&kiosk=true
 ```
 
 Protocol registration is handled automatically by installers on each platform.
@@ -230,7 +230,7 @@ dist/windows/
 
 - Helper app listens only on `localhost`  
 - No remote access  
-- Logs stored at: `~/.mykiosk-helper.log`  
+- Logs stored at: `~/.thkiosk-helper.log`  
 
 ---
 

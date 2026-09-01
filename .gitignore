@@ -30,14 +30,14 @@ dist/
 # Installer staging folders
 # -----------------------------
 # Linux DEB staging
-build/linux/debian/usr/local/bin/mykiosk-helper
-build/linux/debian/usr/share/applications/mykiosk-helper.desktop
+build/linux/debian/usr/local/bin/thkiosk-helper
+build/linux/debian/usr/share/applications/thkiosk-helper.desktop
 
 # macOS APP staging
-build/macos/MyKiosk.app/
+build/macos/ThKiosk.app/
 
 # Windows EXE staging
-build/windows/dist/mykiosk-helper.exe
+build/windows/dist/thkiosk-helper.exe
 
 # -----------------------------
 # OS-specific junk files
@@ -71,7 +71,7 @@ Desktop.ini
 # -----------------------------
 # Logs
 # -----------------------------
-mykiosk-helper.log
+thkiosk-helper.log
 *.log
 
 # -----------------------------

@@ -17,7 +17,7 @@ import uvicorn
 # 📘 Logging Setup
 # ------------------------------------------------------------
 
-LOG_FILE = os.path.expanduser("~/.mykiosk-helper.log")
+LOG_FILE = os.path.expanduser("~/.thkiosk-helper.log")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -28,7 +28,7 @@ logging.basicConfig(
     ]
 )
 
-logger = logging.getLogger("mykiosk-helper")
+logger = logging.getLogger("thkiosk-helper")
 
 
 # ------------------------------------------------------------
@@ -195,7 +195,7 @@ def handle_custom_protocol_arg():
     logger.info(f"Handling custom protocol call: {raw}")
 
     parsed = urlparse(raw)
-    if parsed.scheme != "mykiosk":
+    if parsed.scheme != "thkiosk":
         logger.warning("Unknown protocol scheme.")
         return
 
@@ -213,11 +213,11 @@ def handle_custom_protocol_arg():
 # ------------------------------------------------------------
 
 if __name__ == "__main__":
-    logger.info("MyKiosk Helper App starting...")
-    PORT = int(os.getenv("MYKIOSK_PORT", "3333"))
+    logger.info("ThKiosk Helper App starting...")
+    PORT = int(os.getenv("THKIOSK_PORT", "3333"))
 
     # Handle custom protocol invocation
-    if len(sys.argv) > 1 and sys.argv[1].startswith("mykiosk://"):
+    if len(sys.argv) > 1 and sys.argv[1].startswith("thkiosk://"):
         handle_custom_protocol_arg()
     else:
         logger.info(f"Starting FastAPI server on http://127.0.0.1:{PORT}")
@@ -235,4 +235,4 @@ if __name__ == "__main__":
         try:
             server.run()
         except KeyboardInterrupt:
-            logger.info("MyKiosk Helper stopped cleanly.")
+            logger.info("ThKiosk Helper stopped cleanly.")

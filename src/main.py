@@ -214,9 +214,25 @@ def handle_custom_protocol_arg():
 
 if __name__ == "__main__":
     logger.info("MyKiosk Helper App starting...")
+    PORT = int(os.getenv("MYKIOSK_PORT", "3333"))
 
+    # Handle custom protocol invocation
     if len(sys.argv) > 1 and sys.argv[1].startswith("mykiosk://"):
         handle_custom_protocol_arg()
     else:
-        logger.info("Starting FastAPI server on http://127.0.0.1:3333")
-        uvicorn.run(app, host="127.0.0.1", port=3333)
+        logger.info(f"Starting FastAPI server on http://127.0.0.1:{PORT}")
+
+        import uvicorn
+
+        config = uvicorn.Config(
+            app,
+            host="127.0.0.1",
+            port=PORT,
+            log_level="info"
+        )
+        server = uvicorn.Server(config)
+
+        try:
+            server.run()
+        except KeyboardInterrupt:
+            logger.info("MyKiosk Helper stopped cleanly.")

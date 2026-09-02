@@ -5,6 +5,7 @@ import subprocess
 import shutil
 import logging
 import shlex
+import platform
 
 from urllib.parse import urlparse, parse_qs
 
@@ -55,24 +56,44 @@ app.add_middleware(
 # 🔍 Browser Detection
 # ------------------------------------------------------------
 
-BROWSER_CANDIDATES = [
-    "firefox",
+# Linux/macOS candidates (PATH-based)
+UNIX_BROWSER_CANDIDATES = [
     "google-chrome",
     "chrome",
     "chromium",
     "chromium-browser",
+    "firefox",
     "brave",
     "microsoft-edge",
     "edge",
 ]
 
+# Windows absolute paths
+WINDOWS_BROWSER_PATHS = {
+    "chrome": r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+    "chrome-x86": r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+    "edge": r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+    "edge-64": r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+    "firefox": r"C:\Program Files\Mozilla Firefox\firefox.exe",
+    "firefox-x86": r"C:\Program Files (x86)\Mozilla Firefox\firefox.exe",
+}
+
 
 def detect_installed_browsers():
+    system = sys.platform.lower()
     found = []
-    for name in BROWSER_CANDIDATES:
-        path = shutil.which(name)
-        if path:
-            found.append({"name": name, "path": path})
+
+    if system.startswith("linux") or system.startswith("darwin"):  # macOS = darwin
+        for name in UNIX_BROWSER_CANDIDATES:
+            path = shutil.which(name)
+            if path:
+                found.append({"name": name, "path": path})
+
+    elif system.startswith("win"):
+        for name, path in WINDOWS_BROWSER_PATHS.items():
+            if os.path.exists(path):
+                found.append({"name": name, "path": path})
+
     logger.info(f"Detected browsers: {found}")
     return found
 
@@ -81,55 +102,54 @@ def detect_installed_browsers():
 # 🚀 Browser Launcher
 # ------------------------------------------------------------
 
-def launch_browser(url: str, browser_name: str, kiosk: bool):
-    logger.info(f"Launching browser: name={browser_name}, kiosk={kiosk}, url={url}")
-    # Disable AT-SPI (Assistive Technology Service Provider Interface) 
-    # for GTK applications to avoid accessibility warnings.
-    os.environ["NO_AT_BRIDGE"] = "1"
+def launch_browser(browser_name, url, kiosk=False):
+    system = platform.system().lower()
+    browsers = detect_installed_browsers()
 
-    browser_path = shutil.which(browser_name)
-    if not browser_path:
+    # Find matching browser
+    browser = next((b for b in browsers if browser_name in b["name"]), None)
+    if not browser:
         logger.error(f"Browser '{browser_name}' not found.")
-        return
+        return False
 
-    safe_url = str(url)
-
-    if kiosk:
-        if browser_name == "firefox":
-            cmd = [
-                browser_path,
-                "--kiosk",
-                "--new-window",
-                "--new-instance",
-                safe_url
-            ]
-        elif browser_name in ("chrome", "google-chrome", "chromium", "chromium-browser", "brave"):
-            cmd = [
-                browser_path,
-                "--kiosk",
-                "--new-window",
-                f"--app={safe_url}"
-            ]
-        elif browser_name in ("microsoft-edge", "edge"):
-            cmd = [
-                browser_path,
-                "--kiosk",
-                "--edge-kiosk-type=fullscreen",
-                f"--app={safe_url}"
-            ]
-        else:
-            logger.warning(f"Browser '{browser_name}' may not support kiosk mode. Launching normally.")
-            cmd = [browser_path, shlex.quote(safe_url)]
-    else:
-        cmd = [browser_path, shlex.quote(safe_url)]
-
-    logger.info(f"Executing command: {cmd}")
+    path = browser["path"]
+    logger.info(f"Launching browser: {path} (kiosk={kiosk}) url={url}")
 
     try:
-        subprocess.Popen(cmd)
-        logger.info("Browser launched successfully.")
+        if system == "windows":
+            # Build command string
+            if kiosk:
+                cmd = f'"{path}" --kiosk "{url}"'
+            else:
+                cmd = f'"{path}" "{url}"'
+
+            # Safe split → prevents CTRL+C stack traces
+            args = shlex.split(cmd)
+            subprocess.Popen(args)
+
+        elif system == "darwin":  # macOS
+            if kiosk:
+                cmd = f'open -a "{path}" --args --kiosk "{url}"'
+            else:
+                cmd = f'open -a "{path}" "{url}"'
+
+            args = shlex.split(cmd)
+            subprocess.Popen(args)
+
+        else:  # Linux
+            if kiosk:
+                cmd = f'"{path}" --kiosk "{url}"'
+            else:
+                cmd = f'"{path}" "{url}"'
+
+            args = shlex.split(cmd)
+            subprocess.Popen(args)
+
+        return True
+
     except Exception as e:
-        logger.exception(f"Failed to launch browser: {e}")
+        logger.error(f"Failed to launch browser: {e}")
+        return False
 
 
 # ------------------------------------------------------------
@@ -187,7 +207,7 @@ def open_browser(
     kiosk: bool = Body(False, embed=True),
 ):
     logger.info(f"Cloud requested browser launch: browser={browser}, kiosk={kiosk}, url={target_url}")
-    launch_browser(target_url, browser, kiosk)
+    launch_browser(browser, target_url, kiosk)
     return {"status": "ok"}
 
 
@@ -233,7 +253,7 @@ if __name__ == "__main__":
 
     # One-shot protocol handler mode
     if proto:
-        handle_custom_protocol_arg(proto)
+        handle_custom_protocol_arg()
         sys.exit(0)
 
     # Persistent server mode
@@ -249,4 +269,8 @@ if __name__ == "__main__":
         access_log=False
     )
     server = uvicorn.Server(config)
-    server.run()
+    try:
+        server.run()
+    except KeyboardInterrupt:
+        logger.info("Server stopped cleanly.")
+        # swallow the exception so Python does NOT print a traceback

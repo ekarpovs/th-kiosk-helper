@@ -19,12 +19,17 @@ import uvicorn
 
 LOG_FILE = os.path.expanduser("~/.thkiosk-helper.log")
 
+import logging
+import sys
+
+safe_stream = sys.stdout if sys.stdout else open(os.devnull, "w")
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
         logging.FileHandler(LOG_FILE),
-        logging.StreamHandler()
+        logging.StreamHandler(safe_stream)
     ]
 )
 
@@ -228,7 +233,8 @@ if __name__ == "__main__":
             app,
             host="127.0.0.1",
             port=PORT,
-            log_level="info"
+            log_config=None,      # PyInstaller-safe
+            access_log=False      # avoid Uvicorn handlers
         )
         server = uvicorn.Server(config)
 

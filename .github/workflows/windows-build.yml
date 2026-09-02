@@ -1,0 +1,46 @@
+name: Windows Build
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build Windows executable
+        run: |
+          pyinstaller --onefile --windowed --name thkiosk-helper src/main.py
+
+          if (!(Test-Path "build/windows/dist")) { mkdir "build/windows/dist" }
+
+          $exe = Get-ChildItem -Recurse dist -Filter "thkiosk-helper.exe" | Select-Object -First 1
+          Copy-Item $exe.FullName build/windows/dist/thkiosk-helper.exe
+
+      - name: Install Inno Setup
+        run: choco install innosetup --yes
+
+      - name: Build Windows installer
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "build/windows/InnoSetup/setup.iss"
+
+      - name: Upload Windows installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: build/windows/InnoSetup/ThKioskHelperInstaller.exe

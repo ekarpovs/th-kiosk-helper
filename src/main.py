@@ -8,7 +8,7 @@ import shlex
 
 from urllib.parse import urlparse, parse_qs
 
-from fastapi import FastAPI, Body, Request
+from fastapi import FastAPI, Body, Request, requests
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
@@ -196,49 +196,57 @@ def open_browser(
 # ------------------------------------------------------------
 
 def handle_custom_protocol_arg():
-    raw = sys.argv[1]
-    logger.info(f"Handling custom protocol call: {raw}")
+    th_url = sys.argv[1]
+    logger.info(f"Handling custom protocol call: {th_url}")
 
-    parsed = urlparse(raw)
-    if parsed.scheme != "thkiosk":
-        logger.warning("Unknown protocol scheme.")
-        return
+    # Extract path from protocol URL
+    path = th_url.replace("thkiosk://", "").lstrip("/")
+    http_url = f"http://127.0.0.1:3333/{path}"
 
-    qs = parse_qs(parsed.query)
-    target_url = qs.get("url", [""])[0]
-    browser = qs.get("browser", ["firefox"])[0]
-    kiosk = qs.get("kiosk", ["false"])[0].lower() == "true"
+    logger.info(f"One-shot mode: sending request to {http_url}")
 
-    logger.info(f"Protocol launch: browser={browser}, kiosk={kiosk}, url={target_url}")
-    launch_browser(target_url, browser, kiosk)
+    try:
+        response = requests.get(http_url, timeout=5)
+        logger.info(f"Response {response.status_code}: {response.text}")
+    except Exception as e:
+        logger.error(f"Request failed: {e}")
+
+    logger.info("One-shot protocol handler finished. Exiting.")
 
 
 # ------------------------------------------------------------
 # 🏁 Entry Point
 # ------------------------------------------------------------
 
+def is_protocol_launch():
+    for arg in sys.argv[1:]:
+        if arg.startswith("thkiosk://"):
+            return arg
+    return None
+
+
 if __name__ == "__main__":
     logger.info("ThKiosk Helper App starting...")
     PORT = int(os.getenv("THKIOSK_PORT", "3333"))
 
-    # Handle custom protocol invocation
-    if len(sys.argv) > 1 and sys.argv[1].startswith("thkiosk://"):
-        handle_custom_protocol_arg()
-    else:
-        logger.info(f"Starting FastAPI server on http://127.0.0.1:{PORT}")
+    proto = is_protocol_launch()
 
-        import uvicorn
+    # One-shot protocol handler mode
+    if proto:
+        handle_custom_protocol_arg(proto)
+        sys.exit(0)
 
-        config = uvicorn.Config(
-            app,
-            host="127.0.0.1",
-            port=PORT,
-            log_config=None,      # PyInstaller-safe
-            access_log=False      # avoid Uvicorn handlers
-        )
-        server = uvicorn.Server(config)
+    # Persistent server mode
+    logger.info(f"Starting FastAPI server on http://127.0.0.1:{PORT}")
 
-        try:
-            server.run()
-        except KeyboardInterrupt:
-            logger.info("ThKiosk Helper stopped cleanly.")
+    import uvicorn
+
+    config = uvicorn.Config(
+        app,
+        host="127.0.0.1",
+        port=PORT,
+        log_config=None,
+        access_log=False
+    )
+    server = uvicorn.Server(config)
+    server.run()

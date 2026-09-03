@@ -18,14 +18,15 @@ permissions:
 jobs:
   test-linux:
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
 
     steps:
       - name: Download installer artifact
         uses: actions/download-artifact@v4
         with:
           name: linux-installer
-          github-token: ${{ secrets.READ_FROM_REGISTRY }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
           run-id: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || inputs.run_id }}
 

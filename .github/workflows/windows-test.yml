@@ -70,7 +70,7 @@ jobs:
             Write-Warning "Installer registry location not found; falling back to filesystem search"
           }
 
-      - name: Run helper in background
+      - name: Run helper and test endpoints
         shell: pwsh
         run: |
           # Ensure previous instances from earlier retries cannot block the port.
@@ -178,9 +178,8 @@ jobs:
             exit 1
           }
 
-      - name: Test /health endpoint
-        shell: pwsh
-        run: |
+          # Run endpoint checks in the same step; Windows runners may clean up
+          # step-owned background processes between steps.
           $healthUrl = "http://127.0.0.1:3333/health"
           try {
             $response = Invoke-RestMethod -Uri $healthUrl -Method GET -TimeoutSec 10
@@ -194,9 +193,6 @@ jobs:
             exit 1
           }
 
-      - name: Test /open-browser endpoint
-        shell: pwsh
-        run: |
           $body = @{ target_url = "https://example.com"; browser = "edge"; kiosk = $false } | ConvertTo-Json -Compress
           $openBrowserUrl = "http://127.0.0.1:3333/open-browser"
           try {

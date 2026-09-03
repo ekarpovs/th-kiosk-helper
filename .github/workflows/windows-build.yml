@@ -25,7 +25,7 @@ jobs:
 
       - name: Build Windows executable
         run: |
-          pyinstaller --onefile --windowed --name thkiosk-helper src/main.py
+          pyinstaller --onefile --name thkiosk-helper src/main.py
 
           if (!(Test-Path "build/windows/dist")) { mkdir "build/windows/dist" }
 

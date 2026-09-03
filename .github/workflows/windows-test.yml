@@ -135,6 +135,7 @@ jobs:
           }
 
           $healthy = $false
+          $healthUrls = @("http://127.0.0.1:3333/health", "http://localhost:3333/health")
           for ($i = 0; $i -lt 90; $i++) {
             if ($proc.HasExited) {
               Write-Error "Helper exited during startup with code $($proc.ExitCode)"
@@ -144,16 +145,24 @@ jobs:
               exit 1
             }
 
-            try {
-              $response = Invoke-WebRequest -Uri "http://localhost:3333/health" -TimeoutSec 2
-              if ($response.StatusCode -eq 200) {
-                $healthy = $true
-                break
+            foreach ($healthUrl in $healthUrls) {
+              try {
+                $response = Invoke-WebRequest -Uri $healthUrl -TimeoutSec 2
+                if ($response.StatusCode -eq 200) {
+                  $healthy = $true
+                  break
+                }
+              }
+              catch {
+                # Try next URL variant.
               }
             }
-            catch {
-              Start-Sleep -Seconds 1
+
+            if ($healthy) {
+              break
             }
+
+            Start-Sleep -Seconds 1
           }
 
           if (-not $healthy) {
@@ -172,7 +181,14 @@ jobs:
       - name: Test /health endpoint
         shell: pwsh
         run: |
-          $response = Invoke-RestMethod -Uri "http://localhost:3333/health" -Method GET -TimeoutSec 10
+          $healthUrl = "http://127.0.0.1:3333/health"
+          try {
+            $response = Invoke-RestMethod -Uri $healthUrl -Method GET -TimeoutSec 10
+          }
+          catch {
+            $healthUrl = "http://localhost:3333/health"
+            $response = Invoke-RestMethod -Uri $healthUrl -Method GET -TimeoutSec 10
+          }
           if ($response.status -ne "alive") {
             Write-Error "Unexpected /health response: $($response | ConvertTo-Json -Compress)"
             exit 1
@@ -182,7 +198,14 @@ jobs:
         shell: pwsh
         run: |
           $body = @{ target_url = "https://example.com"; browser = "edge"; kiosk = $false } | ConvertTo-Json -Compress
-          $response = Invoke-RestMethod -Uri "http://localhost:3333/open-browser" -Method POST -ContentType "application/json" -Body $body -TimeoutSec 10
+          $openBrowserUrl = "http://127.0.0.1:3333/open-browser"
+          try {
+            $response = Invoke-RestMethod -Uri $openBrowserUrl -Method POST -ContentType "application/json" -Body $body -TimeoutSec 10
+          }
+          catch {
+            $openBrowserUrl = "http://localhost:3333/open-browser"
+            $response = Invoke-RestMethod -Uri $openBrowserUrl -Method POST -ContentType "application/json" -Body $body -TimeoutSec 10
+          }
           if ($response.status -ne "ok") {
             Write-Error "Unexpected /open-browser response: $($response | ConvertTo-Json -Compress)"
             exit 1

@@ -1,0 +1,48 @@
+name: Linux Test
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Linux Build"]
+    types:
+      - completed
+
+jobs:
+  test-linux:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Download installer artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-installer
+
+      - name: Install .deb
+        run: |
+          sudo dpkg -i thkiosk-helper_1.0.0_amd64.deb || true
+          sudo apt --fix-broken install -y
+
+      - name: Create fake browser executable
+        run: |
+          echo '#!/bin/bash' | sudo tee /usr/local/bin/google-chrome
+          echo 'echo "FAKE BROWSER LAUNCHED: $@"' | sudo tee -a /usr/local/bin/google-chrome
+          sudo chmod +x /usr/local/bin/google-chrome
+
+      - name: Run helper in background
+        run: |
+          nohup thkiosk-helper > helper.log 2>&1 &
+          sleep 3
+
+      - name: Test /health endpoint
+        run: |
+          curl -f http://localhost:3333/health
+
+      - name: Test /open-browser endpoint
+        run: |
+          curl -X POST http://localhost:3333/open-browser \
+            -H "Content-Type: application/json" \
+            -d '{"target_url":"https://example.com","browser":"google-chrome","kiosk":false}'
+
+      - name: Show helper log
+        run: |
+          cat helper.log

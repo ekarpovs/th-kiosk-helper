@@ -1,0 +1,100 @@
+name: Windows Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Run ID of Windows Build workflow"
+        required: true
+  workflow_run:
+    workflows: ["Windows Build"]
+    types:
+      - completed
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  test-windows:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: windows-2022
+    timeout-minutes: 20
+
+    steps:
+      - name: Download installer artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-installer
+          github-token: ${{ secrets.READ_FROM_REGISTRY }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || inputs.run_id }}
+
+      - name: Install Windows installer silently
+        shell: pwsh
+        run: |
+          Start-Process -FilePath .\ThKioskHelperInstaller.exe -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-" -Wait
+
+      - name: Run helper in background
+        shell: pwsh
+        run: |
+          $exe = "C:\Program Files\ThKiosk Helper\thkiosk-helper.exe"
+          if (-not (Test-Path $exe)) {
+            Write-Error "Installed helper not found at $exe"
+            exit 1
+          }
+
+          Start-Process -FilePath $exe -WorkingDirectory $env:GITHUB_WORKSPACE -RedirectStandardOutput helper.log -RedirectStandardError helper.err
+
+          $healthy = $false
+          for ($i = 0; $i -lt 30; $i++) {
+            try {
+              $response = Invoke-WebRequest -Uri "http://127.0.0.1:3333/health" -TimeoutSec 2
+              if ($response.StatusCode -eq 200) {
+                $healthy = $true
+                break
+              }
+            }
+            catch {
+              Start-Sleep -Seconds 1
+            }
+          }
+
+          if (-not $healthy) {
+            Write-Error "Helper did not become healthy in time"
+            if (Test-Path helper.log) { Get-Content helper.log }
+            if (Test-Path helper.err) { Get-Content helper.err }
+            exit 1
+          }
+
+      - name: Test /health endpoint
+        shell: pwsh
+        run: |
+          $response = Invoke-RestMethod -Uri "http://127.0.0.1:3333/health" -Method GET -TimeoutSec 10
+          if ($response.status -ne "alive") {
+            Write-Error "Unexpected /health response: $($response | ConvertTo-Json -Compress)"
+            exit 1
+          }
+
+      - name: Test /open-browser endpoint
+        shell: pwsh
+        run: |
+          $body = @{ target_url = "https://example.com"; browser = "edge"; kiosk = $false } | ConvertTo-Json -Compress
+          $response = Invoke-RestMethod -Uri "http://127.0.0.1:3333/open-browser" -Method POST -ContentType "application/json" -Body $body -TimeoutSec 10
+          if ($response.status -ne "ok") {
+            Write-Error "Unexpected /open-browser response: $($response | ConvertTo-Json -Compress)"
+            exit 1
+          }
+
+      - name: Show helper logs
+        if: always()
+        shell: pwsh
+        run: |
+          if (Test-Path helper.log) { Get-Content helper.log }
+          if (Test-Path helper.err) { Get-Content helper.err }
+
+      - name: Stop helper process
+        if: always()
+        shell: pwsh
+        run: |
+          Get-Process -Name "thkiosk-helper" -ErrorAction SilentlyContinue | Stop-Process -Force

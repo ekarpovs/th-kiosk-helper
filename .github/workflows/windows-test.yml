@@ -119,12 +119,22 @@ jobs:
 
           Write-Host "Using helper executable: $exe"
 
-          Start-Process -FilePath $exe -WorkingDirectory $env:GITHUB_WORKSPACE -RedirectStandardOutput helper.log -RedirectStandardError helper.err
+          $proc = Start-Process -FilePath $exe -WorkingDirectory $env:GITHUB_WORKSPACE -RedirectStandardOutput helper.log -RedirectStandardError helper.err -PassThru
+          Set-Content -Path helper.pid -Value $proc.Id
+          Start-Sleep -Seconds 2
+
+          if ($proc.HasExited) {
+            Write-Error "Helper exited immediately with code $($proc.ExitCode)"
+            if (Test-Path helper.log) { Get-Content helper.log }
+            if (Test-Path helper.err) { Get-Content helper.err }
+            if (Test-Path "$env:USERPROFILE\\.thkiosk-helper.log") { Get-Content "$env:USERPROFILE\\.thkiosk-helper.log" }
+            exit 1
+          }
 
           $healthy = $false
           for ($i = 0; $i -lt 30; $i++) {
             try {
-              $response = Invoke-WebRequest -Uri "http://127.0.0.1:3333/health" -TimeoutSec 2
+              $response = Invoke-WebRequest -Uri "http://localhost:3333/health" -TimeoutSec 2
               if ($response.StatusCode -eq 200) {
                 $healthy = $true
                 break
@@ -137,15 +147,20 @@ jobs:
 
           if (-not $healthy) {
             Write-Error "Helper did not become healthy in time"
+            if (Test-Path helper.pid) {
+              $pid = Get-Content helper.pid
+              Get-Process -Id $pid -ErrorAction SilentlyContinue | Format-Table Id, ProcessName, StartTime
+            }
             if (Test-Path helper.log) { Get-Content helper.log }
             if (Test-Path helper.err) { Get-Content helper.err }
+            if (Test-Path "$env:USERPROFILE\\.thkiosk-helper.log") { Get-Content "$env:USERPROFILE\\.thkiosk-helper.log" }
             exit 1
           }
 
       - name: Test /health endpoint
         shell: pwsh
         run: |
-          $response = Invoke-RestMethod -Uri "http://127.0.0.1:3333/health" -Method GET -TimeoutSec 10
+          $response = Invoke-RestMethod -Uri "http://localhost:3333/health" -Method GET -TimeoutSec 10
           if ($response.status -ne "alive") {
             Write-Error "Unexpected /health response: $($response | ConvertTo-Json -Compress)"
             exit 1
@@ -155,7 +170,7 @@ jobs:
         shell: pwsh
         run: |
           $body = @{ target_url = "https://example.com"; browser = "edge"; kiosk = $false } | ConvertTo-Json -Compress
-          $response = Invoke-RestMethod -Uri "http://127.0.0.1:3333/open-browser" -Method POST -ContentType "application/json" -Body $body -TimeoutSec 10
+          $response = Invoke-RestMethod -Uri "http://localhost:3333/open-browser" -Method POST -ContentType "application/json" -Body $body -TimeoutSec 10
           if ($response.status -ne "ok") {
             Write-Error "Unexpected /open-browser response: $($response | ConvertTo-Json -Compress)"
             exit 1
@@ -172,4 +187,8 @@ jobs:
         if: always()
         shell: pwsh
         run: |
+          if (Test-Path helper.pid) {
+            $pid = Get-Content helper.pid
+            Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue
+          }
           Get-Process -Name "thkiosk-helper" -ErrorAction SilentlyContinue | Stop-Process -Force

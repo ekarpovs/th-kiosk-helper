@@ -2,13 +2,22 @@ name: Linux Test
 
 on:
   workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Run ID of Linux Build workflow"
+        required: true
   workflow_run:
     workflows: ["Linux Build"]
     types:
       - completed
 
+permissions:
+  actions: read
+  contents: read
+
 jobs:
   test-linux:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-20.04
 
     steps:
@@ -16,6 +25,9 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: linux-installer
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || inputs.run_id }}
 
       - name: Install .deb
         run: |
@@ -31,15 +43,23 @@ jobs:
       - name: Run helper in background
         run: |
           nohup thkiosk-helper > helper.log 2>&1 &
-          sleep 3
+          for i in {1..20}; do
+            if curl -fsS --max-time 2 http://localhost:3333/health > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Helper did not become healthy in time"
+          cat helper.log || true
+          exit 1
 
       - name: Test /health endpoint
         run: |
-          curl -f http://localhost:3333/health
+          curl -fsS --max-time 10 http://localhost:3333/health
 
       - name: Test /open-browser endpoint
         run: |
-          curl -X POST http://localhost:3333/open-browser \
+          curl -fsS --max-time 10 -X POST http://localhost:3333/open-browser \
             -H "Content-Type: application/json" \
             -d '{"target_url":"https://example.com","browser":"google-chrome","kiosk":false}'
 

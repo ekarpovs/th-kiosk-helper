@@ -73,6 +73,9 @@ jobs:
       - name: Run helper in background
         shell: pwsh
         run: |
+          # Ensure previous instances from earlier retries cannot block the port.
+          Get-Process -Name "thkiosk-helper" -ErrorAction SilentlyContinue | Stop-Process -Force
+
           $regKeys = @(
             "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\ThKiosk Helper_is1",
             "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\ThKiosk Helper_is1",
@@ -132,7 +135,15 @@ jobs:
           }
 
           $healthy = $false
-          for ($i = 0; $i -lt 30; $i++) {
+          for ($i = 0; $i -lt 90; $i++) {
+            if ($proc.HasExited) {
+              Write-Error "Helper exited during startup with code $($proc.ExitCode)"
+              if (Test-Path helper.log) { Get-Content helper.log }
+              if (Test-Path helper.err) { Get-Content helper.err }
+              if (Test-Path "$env:USERPROFILE\\.thkiosk-helper.log") { Get-Content "$env:USERPROFILE\\.thkiosk-helper.log" }
+              exit 1
+            }
+
             try {
               $response = Invoke-WebRequest -Uri "http://localhost:3333/health" -TimeoutSec 2
               if ($response.StatusCode -eq 200) {
@@ -151,6 +162,7 @@ jobs:
               $helperPid = Get-Content helper.pid
               Get-Process -Id $helperPid -ErrorAction SilentlyContinue | Format-Table Id, ProcessName, StartTime
             }
+            Get-NetTCPConnection -LocalPort 3333 -ErrorAction SilentlyContinue | Format-Table LocalAddress, LocalPort, State, OwningProcess
             if (Test-Path helper.log) { Get-Content helper.log }
             if (Test-Path helper.err) { Get-Content helper.err }
             if (Test-Path "$env:USERPROFILE\\.thkiosk-helper.log") { Get-Content "$env:USERPROFILE\\.thkiosk-helper.log" }

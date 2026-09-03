@@ -148,8 +148,8 @@ jobs:
           if (-not $healthy) {
             Write-Error "Helper did not become healthy in time"
             if (Test-Path helper.pid) {
-              $pid = Get-Content helper.pid
-              Get-Process -Id $pid -ErrorAction SilentlyContinue | Format-Table Id, ProcessName, StartTime
+              $helperPid = Get-Content helper.pid
+              Get-Process -Id $helperPid -ErrorAction SilentlyContinue | Format-Table Id, ProcessName, StartTime
             }
             if (Test-Path helper.log) { Get-Content helper.log }
             if (Test-Path helper.err) { Get-Content helper.err }
@@ -188,7 +188,7 @@ jobs:
         shell: pwsh
         run: |
           if (Test-Path helper.pid) {
-            $pid = Get-Content helper.pid
-            Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue
+            $helperPid = Get-Content helper.pid
+            Stop-Process -Id $helperPid -Force -ErrorAction SilentlyContinue
           }
           Get-Process -Name "thkiosk-helper" -ErrorAction SilentlyContinue | Stop-Process -Force

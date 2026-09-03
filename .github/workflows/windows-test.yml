@@ -26,23 +26,98 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: windows-installer
-          github-token: ${{ secrets.READ_FROM_REGISTRY }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
           run-id: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || inputs.run_id }}
 
       - name: Install Windows installer silently
         shell: pwsh
         run: |
-          Start-Process -FilePath .\ThKioskHelperInstaller.exe -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-" -Wait
+          $p = Start-Process -FilePath .\ThKioskHelperInstaller.exe -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-", "/LOG=setup.log" -Wait -PassThru
+          if ($p.ExitCode -ne 0) {
+            Write-Error "Installer failed with exit code $($p.ExitCode)"
+            if (Test-Path setup.log) { Get-Content setup.log }
+            exit 1
+          }
+
+      - name: Verify installation location
+        shell: pwsh
+        run: |
+          $regKeys = @(
+            "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\ThKiosk Helper_is1",
+            "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\ThKiosk Helper_is1",
+            "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\ThKiosk Helper_is1"
+          )
+
+          $installDir = $null
+          foreach ($k in $regKeys) {
+            if (Test-Path $k) {
+              $props = Get-ItemProperty -Path $k
+              if ($props."Inno Setup: App Path") {
+                $installDir = $props."Inno Setup: App Path"
+                break
+              }
+              if ($props.InstallLocation) {
+                $installDir = $props.InstallLocation
+                break
+              }
+            }
+          }
+
+          if ($installDir) {
+            Write-Host "Installer registry location: $installDir"
+          } else {
+            Write-Warning "Installer registry location not found; falling back to filesystem search"
+          }
 
       - name: Run helper in background
         shell: pwsh
         run: |
-          $exe = "C:\Program Files\ThKiosk Helper\thkiosk-helper.exe"
-          if (-not (Test-Path $exe)) {
-            Write-Error "Installed helper not found at $exe"
+          $regKeys = @(
+            "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\ThKiosk Helper_is1",
+            "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\ThKiosk Helper_is1",
+            "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\ThKiosk Helper_is1"
+          )
+
+          $registryCandidate = $null
+          foreach ($k in $regKeys) {
+            if (Test-Path $k) {
+              $props = Get-ItemProperty -Path $k
+              $appPath = $props."Inno Setup: App Path"
+              if ($appPath) {
+                $candidate = Join-Path $appPath "thkiosk-helper.exe"
+                if (Test-Path $candidate) {
+                  $registryCandidate = $candidate
+                  break
+                }
+              }
+            }
+          }
+
+          $candidates = @(
+            $registryCandidate,
+            "C:\Program Files\ThKiosk Helper\thkiosk-helper.exe",
+            "C:\Program Files (x86)\ThKiosk Helper\thkiosk-helper.exe"
+          ) | Where-Object { $_ }
+
+          $exe = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $exe) {
+            $exe = Get-ChildItem -Path "C:\Program Files", "C:\Program Files (x86)" -Filter "thkiosk-helper.exe" -File -Recurse -ErrorAction SilentlyContinue |
+              Select-Object -ExpandProperty FullName -First 1
+          }
+
+          if (-not $exe) {
+            Write-Host "Install candidates checked:"
+            $candidates | ForEach-Object { Write-Host " - $_" }
+            if (Test-Path setup.log) {
+              Write-Host "----- setup.log -----"
+              Get-Content setup.log
+            }
+            Write-Error "Installed helper executable not found in Program Files locations"
             exit 1
           }
+
+          Write-Host "Using helper executable: $exe"
 
           Start-Process -FilePath $exe -WorkingDirectory $env:GITHUB_WORKSPACE -RedirectStandardOutput helper.log -RedirectStandardError helper.err
 
